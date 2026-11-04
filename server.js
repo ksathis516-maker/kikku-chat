@@ -12,6 +12,9 @@ app.use(express.static("public"));
 let waitingUsers = [];
 let partners = {};
 
+let videoWaitingUsers = [];
+let videoPartners = {};
+
 function removeFromQueue(id) {
   waitingUsers = waitingUsers.filter(user => user !== id);
 }
@@ -51,6 +54,44 @@ function disconnectPartner(socket) {
   removeFromQueue(socket.id);
 }
 
+
+function removeVideoFromQueue(id) {
+  videoWaitingUsers = videoWaitingUsers.filter(user => user !== id);
+}
+
+function disconnectVideoPartner(socket) {
+  const partnerId = videoPartners[socket.id];
+
+  if (partnerId) {
+    delete videoPartners[socket.id];
+    delete videoPartners[partnerId];
+    io.to(partnerId).emit("video-partner-left");
+  }
+
+  removeVideoFromQueue(socket.id);
+}
+
+function findVideoPartner(socket) {
+  removeVideoFromQueue(socket.id);
+
+  while (videoWaitingUsers.length > 0) {
+    const otherId = videoWaitingUsers.shift();
+    const other = io.sockets.sockets.get(otherId);
+
+    if (other && other.connected && !videoPartners[otherId]) {
+      videoPartners[socket.id] = otherId;
+      videoPartners[otherId] = socket.id;
+
+      socket.emit("video-matched", { initiator: false });
+      other.emit("video-matched", { initiator: true });
+      return;
+    }
+  }
+
+  videoWaitingUsers.push(socket.id);
+  socket.emit("video-waiting");
+}
+
 io.on("connection", socket => {
 
   console.log("User connected:", socket.id);
@@ -72,33 +113,41 @@ io.on("connection", socket => {
     }
   });
 
-  // VIDEO CALL SIGNALING
+  // VIDEO CALL MATCHING AND SIGNALING
 
-  socket.on("video-offer", data => {
-    const partnerId = partners[socket.id];
+socket.on("find-video-stranger", () => {
+  disconnectVideoPartner(socket);
+  findVideoPartner(socket);
+});
 
-    if (partnerId && data) {
-      io.to(partnerId).emit("video-offer", data);
-    }
-  });
+socket.on("next-video-stranger", () => {
+  disconnectVideoPartner(socket);
+  findVideoPartner(socket);
+});
 
-  socket.on("video-answer", data => {
-    const partnerId = partners[socket.id];
+socket.on("video-offer", data => {
+  const partnerId = videoPartners[socket.id];
+  if (partnerId && data) {
+    io.to(partnerId).emit("video-offer", data);
+  }
+});
 
-    if (partnerId && data) {
-      io.to(partnerId).emit("video-answer", data);
-    }
-  });
+socket.on("video-answer", data => {
+  const partnerId = videoPartners[socket.id];
+  if (partnerId && data) {
+    io.to(partnerId).emit("video-answer", data);
+  }
+});
 
-  socket.on("ice-candidate", data => {
-    const partnerId = partners[socket.id];
+socket.on("ice-candidate", data => {
+  const partnerId = videoPartners[socket.id];
+  if (partnerId && data) {
+    io.to(partnerId).emit("ice-candidate", data);
+  }
+});
 
-    if (partnerId && data) {
-      io.to(partnerId).emit("ice-candidate", data);
-    }
-  });
-
-  socket.on("disconnect", () => {
+socket.on("disconnect", () => {
+    disconnectVideoPartner(socket);
     disconnectPartner(socket);
     console.log("User disconnected:", socket.id);
   });

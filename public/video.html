@@ -1,185 +1,262 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KIKKU CHAT - Video</title>
-
+<title>KIKKU CHAT - Video Chat</title>
 <style>
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body {
-  background: #090b18;
-  color: white;
-  font-family: Arial, sans-serif;
-}
-
-header {
-  background: #11152a;
-  padding: 20px;
-  color: #a78bfa;
-  font-size: 23px;
-  font-weight: bold;
-}
-
-.container {
-  max-width: 650px;
-  margin: auto;
-  padding: 20px;
-}
-
-h2 {
-  text-align: center;
-  margin: 20px 0;
-}
-
-.video-box {
-  background: #151a30;
-  border-radius: 15px;
-  overflow: hidden;
-  margin-bottom: 18px;
-}
-
-video {
-  width: 100%;
-  display: block;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  background: #252c46;
-}
-
-.caption {
-  padding: 12px;
-  text-align: center;
-  color: #a78bfa;
-}
-
-.controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-button {
-  padding: 14px 20px;
-  border: none;
-  border-radius: 25px;
-  background: #8b5cf6;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.stop {
-  background: #dc3545;
-}
-
-.home {
-  display: block;
-  margin: 20px auto;
-  background: #252c46;
-}
-
-#status {
-  text-align: center;
-  color: #a78bfa;
-  margin: 15px;
-}
-
+*{box-sizing:border-box}
+body{margin:0;background:#090b18;color:white;font-family:Arial,sans-serif}
+header{background:#11152a;padding:20px;color:#a78bfa;font-size:24px;font-weight:bold}
+.container{max-width:650px;margin:auto;padding:16px}
+h2{text-align:center;color:#a78bfa}
+.video-box{background:#151a30;border-radius:16px;overflow:hidden;margin-bottom:16px}
+video{width:100%;display:block;aspect-ratio:16/9;object-fit:cover;background:#252c46}
+.caption{text-align:center;padding:10px;color:#a78bfa}
+#status{text-align:center;padding:14px;color:#a78bfa;font-weight:bold}
+.controls{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+button{border:0;border-radius:25px;padding:14px 18px;background:#8b5cf6;color:white;font-weight:bold;font-size:15px}
+button.stop{background:#dc3545}
+button.home{background:#252c46}
+button:disabled{opacity:.5}
 </style>
 </head>
-
 <body>
-
 <header>KIKKU CHAT 🌍</header>
 
 <div class="container">
-
 <h2>Random Video Chat 📹</h2>
 
 <div class="video-box">
-  <video id="localVideo" autoplay muted playsinline></video>
-  <div class="caption">Your Camera</div>
+<video id="localVideo" autoplay muted playsinline></video>
+<div class="caption">Your Camera</div>
 </div>
 
 <div class="video-box">
-  <video id="remoteVideo" autoplay playsinline></video>
-  <div class="caption">Stranger Video</div>
+<video id="remoteVideo" autoplay playsinline></video>
+<div class="caption">Stranger Video</div>
 </div>
 
-<p id="status">Camera is not started.</p>
+<p id="status">Tap Start Video Chat to begin.</p>
 
 <div class="controls">
-
-<button onclick="startCamera()">
-📷 Start Camera
-</button>
-
-<button onclick="toggleMic()">
-🎤 Microphone ON/OFF
-</button>
-
-<button onclick="toggleCamera()">
-📹 Camera ON/OFF
-</button>
-
-<button class="stop" onclick="stopCamera()">
-⏹ Stop Camera
-</button>
-
+<button id="startBtn" onclick="startVideoChat()">📹 Start Video Chat</button>
+<button onclick="nextStranger()">⏭ Next Stranger</button>
+<button onclick="toggleMic()">🎤 Mic ON/OFF</button>
+<button onclick="toggleCamera()">📷 Camera ON/OFF</button>
+<button class="stop" onclick="stopVideoChat()">⏹ Stop</button>
+<button class="home" onclick="location.href='/'">← Home</button>
+</div>
 </div>
 
-<button class="home" onclick="location.href='/'">
-← Back to Home
-</button>
-
-</div>
-
+<script src="/socket.io/socket.io.js"></script>
 <script>
+const socket = io();
+
+const localVideo = document.getElementById("localVideo");
+const remoteVideo = document.getElementById("remoteVideo");
+const statusText = document.getElementById("status");
+const startBtn = document.getElementById("startBtn");
 
 let localStream = null;
+let peerConnection = null;
+let pendingCandidates = [];
 let micEnabled = true;
 let cameraEnabled = true;
 
-async function startCamera() {
+const rtcConfig = {
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" }
+  ]
+};
 
+function setStatus(message) {
+  statusText.textContent = message;
+}
+
+async function startVideoChat() {
   try {
+    if (!localStream) {
+      localStream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true
+      });
 
-    localStream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: true
-    });
+      localVideo.srcObject = localStream;
+      micEnabled = true;
+      cameraEnabled = true;
+    }
 
-    document.getElementById("localVideo").srcObject = localStream;
+    startBtn.disabled = true;
+    setStatus("🔎 Searching for a stranger...");
 
-    micEnabled = true;
-    cameraEnabled = true;
-
-    document.getElementById("status").textContent =
-      "🟢 Camera and Microphone Started!";
-
-  } catch(error) {
-
-    document.getElementById("status").textContent =
-      "Camera permission denied or unavailable.";
-
+    if (socket.connected) {
+      socket.emit("find-video-stranger");
+    } else {
+      socket.connect();
+      socket.once("connect", () => {
+        socket.emit("find-video-stranger");
+      });
+    }
+  } catch (error) {
     console.error(error);
+    startBtn.disabled = false;
+    setStatus("Camera or microphone permission denied.");
+  }
+}
 
+function createPeerConnection() {
+  if (peerConnection) return peerConnection;
+
+  peerConnection = new RTCPeerConnection(rtcConfig);
+
+  localStream.getTracks().forEach(track => {
+    peerConnection.addTrack(track, localStream);
+  });
+
+  peerConnection.onicecandidate = event => {
+    if (event.candidate) {
+      socket.emit("ice-candidate", event.candidate);
+    }
+  };
+
+  peerConnection.ontrack = event => {
+    remoteVideo.srcObject = event.streams[0];
+    remoteVideo.play().catch(() => {});
+    setStatus("🟢 Video connected!");
+  };
+
+  peerConnection.onconnectionstatechange = () => {
+    if (!peerConnection) return;
+
+    if (peerConnection.connectionState === "connected") {
+      setStatus("🟢 Video call connected!");
+    } else if (peerConnection.connectionState === "failed") {
+      setStatus("Connection failed. Try Next Stranger.");
+    } else if (peerConnection.connectionState === "disconnected") {
+      setStatus("Connection interrupted.");
+    }
+  };
+
+  return peerConnection;
+}
+
+async function startOffer() {
+  const pc = createPeerConnection();
+  const offer = await pc.createOffer();
+
+  await pc.setLocalDescription(offer);
+  socket.emit("video-offer", pc.localDescription);
+}
+
+socket.on("video-waiting", () => {
+  setStatus("⏳ Waiting for another person...");
+});
+
+socket.on("video-matched", async data => {
+  try {
+    setStatus("🟢 Stranger connected! Starting video...");
+
+    createPeerConnection();
+
+    if (data && data.initiator) {
+      await startOffer();
+    }
+  } catch (error) {
+    console.error(error);
+    setStatus("Could not start video connection.");
+  }
+});
+
+socket.on("video-offer", async offer => {
+  try {
+    const pc = createPeerConnection();
+
+    await pc.setRemoteDescription(
+      new RTCSessionDescription(offer)
+    );
+
+    for (const candidate of pendingCandidates) {
+      await pc.addIceCandidate(candidate);
+    }
+    pendingCandidates = [];
+
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+
+    socket.emit("video-answer", pc.localDescription);
+    setStatus("Connecting video...");
+  } catch (error) {
+    console.error(error);
+    setStatus("Video offer error.");
+  }
+});
+
+socket.on("video-answer", async answer => {
+  try {
+    if (!peerConnection) return;
+
+    await peerConnection.setRemoteDescription(
+      new RTCSessionDescription(answer)
+    );
+
+    for (const candidate of pendingCandidates) {
+      await peerConnection.addIceCandidate(candidate);
+    }
+    pendingCandidates = [];
+  } catch (error) {
+    console.error(error);
+    setStatus("Video answer error.");
+  }
+});
+
+socket.on("ice-candidate", async candidate => {
+  try {
+    if (!peerConnection || !peerConnection.remoteDescription) {
+      pendingCandidates.push(candidate);
+    } else {
+      await peerConnection.addIceCandidate(
+        new RTCIceCandidate(candidate)
+      );
+    }
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+function closePeer() {
+  if (peerConnection) {
+    peerConnection.close();
+    peerConnection = null;
   }
 
+  pendingCandidates = [];
+  remoteVideo.srcObject = null;
+}
+
+socket.on("video-partner-left", () => {
+  closePeer();
+  startBtn.disabled = false;
+  setStatus("Stranger left. Tap Next Stranger to continue.");
+});
+
+function nextStranger() {
+  closePeer();
+
+  if (!localStream) {
+    startVideoChat();
+    return;
+  }
+
+  startBtn.disabled = true;
+  setStatus("🔎 Finding next stranger...");
+
+  socket.emit("next-video-stranger");
 }
 
 function toggleMic() {
-
   if (!localStream) {
-    alert("First Start Camera!");
+    alert("Start Video Chat first!");
     return;
   }
 
@@ -189,15 +266,12 @@ function toggleMic() {
     track.enabled = micEnabled;
   });
 
-  document.getElementById("status").textContent =
-    micEnabled ? "🎤 Microphone ON" : "🔇 Microphone OFF";
-
+  setStatus(micEnabled ? "🎤 Microphone ON" : "🔇 Microphone OFF");
 }
 
 function toggleCamera() {
-
   if (!localStream) {
-    alert("First Start Camera!");
+    alert("Start Video Chat first!");
     return;
   }
 
@@ -207,30 +281,33 @@ function toggleCamera() {
     track.enabled = cameraEnabled;
   });
 
-  document.getElementById("status").textContent =
-    cameraEnabled ? "📹 Camera ON" : "📷 Camera OFF";
-
+  setStatus(cameraEnabled ? "📷 Camera ON" : "Camera OFF");
 }
 
-function stopCamera() {
+function stopVideoChat() {
+  closePeer();
 
   if (localStream) {
-
     localStream.getTracks().forEach(track => track.stop());
-
     localStream = null;
-
-    document.getElementById("localVideo").srcObject = null;
-
-    document.getElementById("status").textContent =
-      "⏹ Camera Stopped.";
-
   }
 
+  localVideo.srcObject = null;
+  socket.disconnect();
+
+  startBtn.disabled = false;
+  setStatus("⏹ Video chat stopped.");
 }
 
-</script>
+socket.on("disconnect", () => {
+  closePeer();
+  startBtn.disabled = false;
+  setStatus("Server disconnected.");
+});
 
+socket.on("connect", () => {
+  console.log("Connected to KIKKU CHAT server");
+});
+</script>
 </body>
 </html>
-
