@@ -12,6 +12,14 @@ app.use(express.static("public"));
 let waitingUsers = [];
 let partners = {};
 
+const blockedUsers = new Map();
+
+function isBlocked(a, b) {
+  return blockedUsers.get(a)?.has(b) ||
+         blockedUsers.get(b)?.has(a);
+}
+
+
 let videoWaitingUsers = [];
 let videoPartners = {};
 
@@ -26,7 +34,7 @@ function findPartner(socket) {
     const otherId = waitingUsers.shift();
     const other = io.sockets.sockets.get(otherId);
 
-    if (other && other.connected && !partners[otherId]) {
+    if (other && other.connected && !partners[otherId] && !isBlocked(socket.id, otherId)) {
       partners[socket.id] = otherId;
       partners[otherId] = socket.id;
 
@@ -78,7 +86,7 @@ function findVideoPartner(socket) {
     const otherId = videoWaitingUsers.shift();
     const other = io.sockets.sockets.get(otherId);
 
-    if (other && other.connected && !videoPartners[otherId]) {
+    if (other && other.connected && !videoPartners[otherId] && !isBlocked(socket.id, otherId)) {
       videoPartners[socket.id] = otherId;
       videoPartners[otherId] = socket.id;
 
