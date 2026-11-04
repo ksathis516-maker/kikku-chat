@@ -1,0 +1,236 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIKKU CHAT - Video</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #090b18;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+header {
+  background: #11152a;
+  padding: 20px;
+  color: #a78bfa;
+  font-size: 23px;
+  font-weight: bold;
+}
+
+.container {
+  max-width: 650px;
+  margin: auto;
+  padding: 20px;
+}
+
+h2 {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.video-box {
+  background: #151a30;
+  border-radius: 15px;
+  overflow: hidden;
+  margin-bottom: 18px;
+}
+
+video {
+  width: 100%;
+  display: block;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #252c46;
+}
+
+.caption {
+  padding: 12px;
+  text-align: center;
+  color: #a78bfa;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+button {
+  padding: 14px 20px;
+  border: none;
+  border-radius: 25px;
+  background: #8b5cf6;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.stop {
+  background: #dc3545;
+}
+
+.home {
+  display: block;
+  margin: 20px auto;
+  background: #252c46;
+}
+
+#status {
+  text-align: center;
+  color: #a78bfa;
+  margin: 15px;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>KIKKU CHAT 🌍</header>
+
+<div class="container">
+
+<h2>Random Video Chat 📹</h2>
+
+<div class="video-box">
+  <video id="localVideo" autoplay muted playsinline></video>
+  <div class="caption">Your Camera</div>
+</div>
+
+<div class="video-box">
+  <video id="remoteVideo" autoplay playsinline></video>
+  <div class="caption">Stranger Video</div>
+</div>
+
+<p id="status">Camera is not started.</p>
+
+<div class="controls">
+
+<button onclick="startCamera()">
+📷 Start Camera
+</button>
+
+<button onclick="toggleMic()">
+🎤 Microphone ON/OFF
+</button>
+
+<button onclick="toggleCamera()">
+📹 Camera ON/OFF
+</button>
+
+<button class="stop" onclick="stopCamera()">
+⏹ Stop Camera
+</button>
+
+</div>
+
+<button class="home" onclick="location.href='/'">
+← Back to Home
+</button>
+
+</div>
+
+<script>
+
+let localStream = null;
+let micEnabled = true;
+let cameraEnabled = true;
+
+async function startCamera() {
+
+  try {
+
+    localStream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: true
+    });
+
+    document.getElementById("localVideo").srcObject = localStream;
+
+    micEnabled = true;
+    cameraEnabled = true;
+
+    document.getElementById("status").textContent =
+      "🟢 Camera and Microphone Started!";
+
+  } catch(error) {
+
+    document.getElementById("status").textContent =
+      "Camera permission denied or unavailable.";
+
+    console.error(error);
+
+  }
+
+}
+
+function toggleMic() {
+
+  if (!localStream) {
+    alert("First Start Camera!");
+    return;
+  }
+
+  micEnabled = !micEnabled;
+
+  localStream.getAudioTracks().forEach(track => {
+    track.enabled = micEnabled;
+  });
+
+  document.getElementById("status").textContent =
+    micEnabled ? "🎤 Microphone ON" : "🔇 Microphone OFF";
+
+}
+
+function toggleCamera() {
+
+  if (!localStream) {
+    alert("First Start Camera!");
+    return;
+  }
+
+  cameraEnabled = !cameraEnabled;
+
+  localStream.getVideoTracks().forEach(track => {
+    track.enabled = cameraEnabled;
+  });
+
+  document.getElementById("status").textContent =
+    cameraEnabled ? "📹 Camera ON" : "📷 Camera OFF";
+
+}
+
+function stopCamera() {
+
+  if (localStream) {
+
+    localStream.getTracks().forEach(track => track.stop());
+
+    localStream = null;
+
+    document.getElementById("localVideo").srcObject = null;
+
+    document.getElementById("status").textContent =
+      "⏹ Camera Stopped.";
+
+  }
+
+}
+
+</script>
+
+</body>
+</html>
+

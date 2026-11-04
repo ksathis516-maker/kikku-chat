@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIKKU CHAT</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: #090b18;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+header {
+    background: #151a30;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    color: #a78bfa;
+    font-size: 23px;
+    font-weight: bold;
+}
+
+button {
+    border: none;
+    padding: 14px 20px;
+    border-radius: 25px;
+    font-weight: bold;
+    cursor: pointer;
+    color: white;
+    font-size: 15px;
+}
+
+.home-btn, .secondary, .back {
+    background: #252c46;
+}
+
+.primary, .send {
+    background: #8b5cf6;
+}
+
+.page {
+    display: none;
+}
+
+#home {
+    display: block;
+}
+
+.hero {
+    text-align: center;
+    padding: 90px 15px;
+}
+
+h1 {
+    font-size: 38px;
+    margin-bottom: 20px;
+}
+
+h1 span {
+    color: #a78bfa;
+}
+
+.hero p {
+    color: #b9bdd0;
+    line-height: 1.6;
+    margin-bottom: 30px;
+}
+
+.buttons {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.features {
+    max-width: 600px;
+    margin: 20px auto;
+    padding: 15px;
+}
+
+.feature {
+    background: #151a30;
+    padding: 30px;
+    border-radius: 20px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.feature h3 {
+    color: #a78bfa;
+    margin-bottom: 12px;
+}
+
+.feature p {
+    color: #b9bdd0;
+}
+
+#chat {
+    padding: 25px 15px;
+}
+
+.container {
+    max-width: 650px;
+    margin: auto;
+}
+
+.back {
+    margin-bottom: 20px;
+}
+
+.status {
+    background: #151a30;
+    padding: 20px;
+    border-radius: 18px;
+    text-align: center;
+    color: #a78bfa;
+    margin-bottom: 25px;
+    font-weight: bold;
+}
+
+.chatbox {
+    background: #151a30;
+    padding: 20px;
+    border-radius: 22px;
+    height: 65vh;
+    min-height: 350px;
+    display: flex;
+    flex-direction: column;
+}
+
+.messages {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 5px;
+}
+
+.message {
+    padding: 14px;
+    border-radius: 15px;
+    max-width: 80%;
+    overflow-wrap: anywhere;
+}
+
+.me {
+    background: #7546d9;
+    align-self: flex-end;
+}
+
+.stranger {
+    background: #252c46;
+    align-self: flex-start;
+}
+
+.system {
+    color: #b9bdd0;
+    text-align: center;
+    font-size: 13px;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+input {
+    flex: 1;
+    min-width: 0;
+    padding: 15px;
+    border: none;
+    border-radius: 12px;
+    background: #252c46;
+    color: white;
+    font-size: 15px;
+    outline: none;
+}
+
+input::placeholder {
+    color: #999;
+}
+
+.next {
+    width: 100%;
+    margin-top: 20px;
+    background: #252c46;
+}
+
+footer {
+    text-align: center;
+    padding: 30px;
+    color: #888ba5;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="logo">KIKKU CHAT 🌍</div>
+    <button class="home-btn" onclick="goHome()">Home</button>
+</header>
+
+<!-- HOME PAGE -->
+
+<section id="home" class="page">
+
+    <div class="hero">
+
+        <h1>
+            Meet <span>Strangers</span><br>
+            Worldwide 🌍
+        </h1>
+
+        <p>Connect with new people around the world.</p>
+
+        <div class="buttons">
+            <button class="primary" onclick="openChat()">
+                💬 Text Chat
+            </button>
+
+            <button class="secondary" onclick="alert('Video Chat coming soon!')">
+                📺 Video Chat
+            </button>
+        </div>
+
+    </div>
+
+    <div class="features">
+
+        <div class="feature">
+            <h3>💬 Random Chat</h3>
+            <p>Meet new people.</p>
+        </div>
+
+        <div class="feature">
+            <h3>📹 Video Call</h3>
+            <p>Talk face to face.</p>
+        </div>
+
+        <div class="feature">
+            <h3>🌍 Worldwide</h3>
+            <p>Connect globally.</p>
+        </div>
+
+    </div>
+
+</section>
+
+<!-- CHAT PAGE -->
+
+<section id="chat" class="page">
+
+    <div class="container">
+
+        <button class="back" onclick="goHome()">
+            ← Home
+        </button>
+
+        <div class="status" id="status">
+            Connecting...
+        </div>
+
+        <div class="chatbox">
+
+            <div class="messages" id="messages">
+            </div>
+
+            <div class="controls">
+
+                <input
+                    id="messageInput"
+                    placeholder="Type your message..."
+                    maxlength="1000"
+                >
+
+                <button class="send" onclick="sendMessage()">
+                    Send
+                </button>
+
+            </div>
+
+        </div>
+
+        <button class="next" onclick="findStranger()">
+            ⏭ Next Stranger
+        </button>
+
+    </div>
+
+</section>
+
+<footer>
+    © 2026 KIKKU CHAT
+</footer>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+
+const socket = io();
+
+let matched = false;
+
+function showPage(id) {
+    document.querySelectorAll(".page").forEach(page => {
+        page.style.display = "none";
+    });
+
+    document.getElementById(id).style.display = "block";
+
+    window.scrollTo(0, 0);
+}
+
+function goHome() {
+    showPage("home");
+}
+
+function openChat() {
+    showPage("chat");
+    findStranger();
+}
+
+function addMessage(text, type) {
+
+    const box = document.getElementById("messages");
+
+    const msg = document.createElement("div");
+
+    msg.className = "message " + type;
+
+    msg.textContent = text;
+
+    box.appendChild(msg);
+
+    box.scrollTop = box.scrollHeight;
+}
+
+function findStranger() {
+
+    matched = false;
+
+    document.getElementById("messages").innerHTML = "";
+
+    document.getElementById("status").textContent =
+        "🔍 Searching for stranger...";
+
+    socket.emit("find-stranger");
+}
+
+socket.on("waiting", () => {
+
+    matched = false;
+
+    document.getElementById("status").textContent =
+        "⏳ Waiting for another person...";
+
+});
+
+socket.on("matched", () => {
+
+    matched = true;
+
+    document.getElementById("status").textContent =
+        "🟢 Stranger connected!";
+
+    addMessage("You are now connected! Say hello 👋", "system");
+
+});
+
+socket.on("chat-message", message => {
+
+    addMessage(message, "stranger");
+
+});
+
+socket.on("partner-left", () => {
+
+    matched = false;
+
+    document.getElementById("status").textContent =
+        "Stranger left. Find another person.";
+
+    addMessage("Stranger disconnected.", "system");
+
+});
+
+function sendMessage() {
+
+    const input = document.getElementById("messageInput");
+
+    const message = input.value.trim();
+
+    if (!message || !matched) return;
+
+    socket.emit("chat-message", message);
+
+    addMessage(message, "me");
+
+    input.value = "";
+
+}
+
+document.getElementById("messageInput")
+.addEventListener("keydown", event => {
+
+    if (event.key === "Enter") {
+        sendMessage();
+    }
+
+});
+
+socket.on("connect", () => {
+
+    console.log("Connected to server");
+
+});
+
+socket.on("disconnect", () => {
+
+    matched = false;
+
+    document.getElementById("status").textContent =
+        "🔴 Server disconnected";
+
+});
+
+</script>
+
+</body>
+</html>
+
