@@ -300,6 +300,9 @@ footer {
         <button class="next" onclick="findStranger()">
             ⏭ Next Stranger
         </button>
+<button class="next" onclick="blockUser()" style="background:#dc3545;margin-top:10px">
+🚫 Block User
+</button>
 
     </div>
 
@@ -438,6 +441,26 @@ socket.on("disconnect", () => {
     document.getElementById("status").textContent =
         "🔴 Server disconnected";
 
+});
+
+
+function blockUser() {
+    if (!matched) {
+        alert("Connect with a stranger first!");
+        return;
+    }
+    if (confirm("Block this stranger?")) {
+        socket.emit("block-user");
+    }
+}
+
+socket.on("block-result", data => {
+    alert(data.message);
+    if (data.ok) {
+        matched = false;
+        document.getElementById("messages").innerHTML = "";
+        document.getElementById("status").textContent = "🚫 User blocked.";
+    }
 });
 
 </script>

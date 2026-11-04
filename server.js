@@ -154,6 +154,38 @@ socket.on("ice-candidate", data => {
   }
 });
 
+
+socket.on("block-user", () => {
+  const textPartnerId = partners[socket.id];
+  const videoPartnerId = videoPartners[socket.id];
+
+  const partnerIds = [...new Set(
+    [textPartnerId, videoPartnerId].filter(Boolean)
+  )];
+
+  if (partnerIds.length === 0) {
+    socket.emit("block-result", {
+      ok: false,
+      message: "No user to block."
+    });
+    return;
+  }
+
+  if (!blockedUsers.has(socket.id)) {
+    blockedUsers.set(socket.id, new Set());
+  }
+
+  partnerIds.forEach(id => blockedUsers.get(socket.id).add(id));
+
+  if (textPartnerId) disconnectPartner(socket);
+  if (videoPartnerId) disconnectVideoPartner(socket);
+
+  socket.emit("block-result", {
+    ok: true,
+    message: "User blocked successfully."
+  });
+});
+
 socket.on("disconnect", () => {
     disconnectVideoPartner(socket);
     disconnectPartner(socket);
