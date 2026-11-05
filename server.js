@@ -2,7 +2,13 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-
+const { MongoClient } = require("mongodb");
+const mongoClient = new MongoClient(process.env.MONGODB_URI);
+let reportsCollection;
+mongoClient.connect().then(() => {
+  reportsCollection = mongoClient.db("kikku_chat").collection("reports");
+  console.log("MongoDB connected successfully!");
+}).catch(err => console.error("MongoDB connection error:", err));
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -155,8 +161,7 @@ socket.on("ice-candidate", data => {
 });
 
 
-socket.on("report-user", reason => {
-  const partnerId = partners[socket.id] || videoPartners[socket.id];
+socket.on("report-user", async reason => {  const partnerId = partners[socket.id] || videoPartners[socket.id];
 
   if (!partnerId) {
     socket.emit("report-result", {
@@ -177,16 +182,25 @@ socket.on("report-user", reason => {
 
   if (!allowedReasons.includes(cleanReason)) return;
 
-  console.log("USER REPORT:", {
+  try {
+  await reportsCollection.insertOne({
     reporter: socket.id,
     reportedUser: partnerId,
-    reason: cleanReason
+    reason: cleanReason,
+    createdAt: new Date()
   });
 
   socket.emit("report-result", {
     ok: true,
-    message: "Report submitted successfully."
+    message: "Report saved successfully."
   });
+} catch (error) {
+  console.error("Report save error:", error);
+  socket.emit("report-result", {
+    ok: false,
+    message: "Report save failed."
+  });
+}
 });
 
 socket.on("block-user", () => {
