@@ -1,4 +1,7 @@
 
+
+
+
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -115,18 +118,32 @@ io.on("connection", socket => {
     findPartner(socket);
   });
 
-  socket.on("chat-message", message => {
-    const partnerId = partners[socket.id];
+ let chatMessageTimes = [];
 
-    if (partnerId && typeof message === "string") {
-      const cleanMessage = message.trim().slice(0, 1000);
+socket.on("chat-message", message => {
+  const partnerId = partners[socket.id];
 
-      if (cleanMessage) {
-        io.to(partnerId).emit("chat-message", cleanMessage);
-      }
+  if (partnerId && typeof message === "string") {
+    const cleanMessage = message.trim().slice(0, 1000);
+    if (!cleanMessage) return;
+
+    const now = Date.now();
+
+    chatMessageTimes = chatMessageTimes.filter(
+      time => now - time < 10000
+    );
+
+    if (chatMessageTimes.length >= 5) {
+      socket.emit("chat-rate-limit", {
+        message: "Too many messages. Please wait."
+      });
+      return;
     }
-  });
 
+    chatMessageTimes.push(now);
+    io.to(partnerId).emit("chat-message", cleanMessage);
+  }
+});
   // VIDEO CALL MATCHING AND SIGNALING
 
 socket.on("find-video-stranger", () => {
