@@ -304,6 +304,10 @@ footer {
 🚫 Block User
 </button>
 
+<button class="next" onclick="reportUser()" style="background:#e67e22;margin-top:10px">
+    🚩 Report User
+</button>
+
     </div>
 
 </section>
@@ -463,7 +467,38 @@ socket.on("block-result", data => {
     }
 });
 
-</script>
+
+function reportUser() {
+  if (!matched) {
+    alert("Connect with a stranger first!");
+    return;
+  }
+
+  const reason = prompt(
+    "Select reason:\n1. Inappropriate content\n2. Harassment\n3. Spam\n4. Other"
+  );
+
+  if (reason === null) return;
+
+  const reasons = {
+    "1": "Inappropriate content",
+    "2": "Harassment",
+    "3": "Spam",
+    "4": "Other"
+  };
+
+  if (!reasons[reason.trim()]) {
+    alert("Invalid reason!");
+    return;
+  }
+
+  socket.emit("report-user", reasons[reason.trim()]);
+}
+
+socket.on("report-result", data => {
+  alert(data.message);
+});
+\n</script>
 
 </body>
 </html>

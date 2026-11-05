@@ -155,6 +155,40 @@ socket.on("ice-candidate", data => {
 });
 
 
+socket.on("report-user", reason => {
+  const partnerId = partners[socket.id] || videoPartners[socket.id];
+
+  if (!partnerId) {
+    socket.emit("report-result", {
+      ok: false,
+      message: "No stranger connected."
+    });
+    return;
+  }
+
+  const allowedReasons = [
+    "Inappropriate content",
+    "Harassment",
+    "Spam",
+    "Other"
+  ];
+
+  const cleanReason = String(reason || "").slice(0, 100);
+
+  if (!allowedReasons.includes(cleanReason)) return;
+
+  console.log("USER REPORT:", {
+    reporter: socket.id,
+    reportedUser: partnerId,
+    reason: cleanReason
+  });
+
+  socket.emit("report-result", {
+    ok: true,
+    message: "Report submitted successfully."
+  });
+});
+
 socket.on("block-user", () => {
   const textPartnerId = partners[socket.id];
   const videoPartnerId = videoPartners[socket.id];
