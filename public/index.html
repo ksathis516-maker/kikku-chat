@@ -374,9 +374,7 @@ socket.on("waiting", () => {
 
     matched = false;
 
-    document.getElementById("status").textContent =
-        "⏳ Waiting for another person...";
-
+    document.getElementById("status").textContent = "Waiting for another person...";
 });
 
 socket.on("matched", () => {
@@ -391,9 +389,14 @@ socket.on("matched", () => {
 });
 
 socket.on("chat-message", message => {
-
     addMessage(message, "stranger");
+});
 
+socket.on("chat-rate-limit", data => {
+    addMessage(
+        data.message || "Too many messages. Please wait.",
+        "system"
+    );
 });
 
 socket.on("partner-left", () => {
