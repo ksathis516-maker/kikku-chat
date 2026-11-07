@@ -118,32 +118,34 @@ io.on("connection", socket => {
     findPartner(socket);
   });
 
- let chatMessageTimes = [];
-
+ const chatMessageTimes = new Map();
 socket.on("chat-message", message => {
   const partnerId = partners[socket.id];
 
-  if (partnerId && typeof message === "string") {
-    const cleanMessage = message.trim().slice(0, 1000);
-    if (!cleanMessage) return;
+  if (!partnerId || typeof message !== "string") return;
 
-    const now = Date.now();
+  const cleanMessage = message.trim().slice(0, 1000);
+  if (!cleanMessage) return;
 
-    chatMessageTimes = chatMessageTimes.filter(
-      time => now - time < 10000
-    );
+  const now = Date.now();
 
-    if (chatMessageTimes.length >= 5) {
-      socket.emit("chat-rate-limit", {
-        message: "Too many messages. Please wait."
-      });
-      return;
-    }
+  let times = chatMessageTimes.get(socket.id) || [];
 
-    chatMessageTimes.push(now);
-    io.to(partnerId).emit("chat-message", cleanMessage);
+  times = times.filter(time => now - time < 10000);
+
+  if (times.length >= 5) {
+    socket.emit("chat-rate-limit", {
+      message: "Too many messages. Please wait."
+    });
+    return;
   }
+
+   times.push(now);
+  chatMessageTimes.set(socket.id, times);
+
+  io.to(partnerId).emit("chat-message", cleanMessage);
 });
+
   // VIDEO CALL MATCHING AND SIGNALING
 
 socket.on("find-video-stranger", () => {
@@ -252,6 +254,8 @@ socket.on("block-user", () => {
 });
 
 socket.on("disconnect", () => {
+    chatMessageTimes.delete(socket.id);
+    
     disconnectVideoPartner(socket);
     disconnectPartner(socket);
     console.log("User disconnected:", socket.id);
