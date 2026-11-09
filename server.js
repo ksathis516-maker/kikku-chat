@@ -5,7 +5,7 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const { MongoClient } = require("mongodb");
+const { MongoClient, ObjectId } = require("mongodb");
 const mongoClient = new MongoClient(process.env.MONGODB_URI);
 let reportsCollection;
 mongoClient.connect().then(() => {
@@ -279,6 +279,32 @@ app.post("/admin-login", express.json(), (req, res) => {
     success: true,
     message: "Admin login successful"
   });
+});
+// DELETE ADMIN REPORT
+app.delete("/admin-reports/:id", async (req, res) => {
+  const password = req.headers["x-admin-password"];
+
+  if (!ADMIN_PASSWORD || password !== ADMIN_PASSWORD) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized"
+    });
+  }
+
+  try {
+    const result = await reportsCollection.deleteOne({
+      _id: new ObjectId(req.params.id)
+    });
+
+    res.json({
+      success: result.deletedCount === 1
+    });
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid report ID"
+    });
+  }
 });
 // ADMIN REPORTS
 app.get("/admin-reports", async (req, res) => {
