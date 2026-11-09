@@ -262,6 +262,53 @@ socket.on("disconnect", () => {
   });
 
 });
+// ADMIN LOGIN
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+app.post("/admin-login", express.json(), (req, res) => {
+  const password = req.body.password;
+
+  if (!ADMIN_PASSWORD || password !== ADMIN_PASSWORD) {
+    return res.status(401).json({
+      success: false,
+      message: "Invalid password"
+    });
+  }
+
+  res.json({
+    success: true,
+    message: "Admin login successful"
+  });
+});
+// ADMIN REPORTS
+app.get("/admin-reports", async (req, res) => {
+  const password = req.headers["x-admin-password"];
+
+  if (!ADMIN_PASSWORD || password !== ADMIN_PASSWORD) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized"
+    });
+  }
+
+  try {
+    const reports = await reportsCollection
+      .find()
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .toArray();
+
+    res.json({
+      success: true,
+      reports
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to load reports"
+    });
+  }
+});
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, "0.0.0.0", () => {

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIKKU CHAT - Admin</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;
+  padding:20px;
+  background:#080b18;
+  color:white;
+  font-family:Arial,sans-serif;
+}
+.container{max-width:700px;margin:auto}
+h1{color:#9b65ff;text-align:center}
+.card{
+  background:#171d35;
+  padding:22px;
+  border-radius:18px;
+  margin-top:20px;
+}
+input{
+  width:100%;
+  padding:15px;
+  border:0;
+  border-radius:10px;
+  margin:10px 0;
+  font-size:16px;
+}
+button{
+  background:#8955ef;
+  color:white;
+  border:0;
+  padding:14px 20px;
+  border-radius:10px;
+  font-weight:bold;
+  width:100%;
+}
+#dashboard{display:none}
+#error{color:#ff6464}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🔐 KIKKU CHAT ADMIN</h1>
+
+<div class="card" id="login">
+<h2>Admin Login</h2>
+<input id="password" type="password"
+placeholder="Enter Admin Password">
+<button onclick="loginAdmin()">Login</button>
+<p id="error"></p>
+</div>
+
+<div class="card" id="dashboard">
+<h2>📋 User Reports</h2>
+<p id="total">Loading...</p>
+<div id="reports"></div>
+<button onclick="logoutAdmin()">Logout</button>
+</div>
+</div>
+
+<script>
+let adminPassword = "";
+async function loginAdmin(){
+  const password =
+    document.getElementById("password").value;
+    adminPassword = password;
+  const response = await fetch("/admin-login", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({password})
+  });
+
+  const data = await response.json();
+
+  if(data.success){
+    document.getElementById("login").style.display="none";
+    document.getElementById("dashboard").style.display="block";
+    loadReports();
+  }else{
+    document.getElementById("error").textContent =
+      "Invalid password";
+  }
+}
+
+async function loadReports(){
+  const response = await fetch("/admin-reports", {
+    headers: {
+        "x-admin-password": adminPassword
+    }
+});
+  if(!response.ok){
+    document.getElementById("reports").textContent =
+      "Unable to load reports.";
+    return;
+  }
+  const data = await response.json();
+  document.getElementById("total").textContent =
+    "Total Reports: " + data.length;
+  document.getElementById("reports").innerHTML =
+    data.map(r => `
+      <div class="card">
+        <b>Reason:</b> ${escapeHTML(r.reason)}<br>
+        <small>${escapeHTML(r.createdAt || "")}</small>
+      </div>
+    `).join("");
+}
+
+function escapeHTML(value){
+  const div=document.createElement("div");
+  div.textContent=String(value ?? "");
+  return div.innerHTML;
+}
+
+function logoutAdmin(){
+  location.reload();
+}
+</script>
+</body>
+</html>
