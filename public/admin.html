@@ -89,24 +89,26 @@ async function loginAdmin(){
 async function loadReports(){
   const response = await fetch("/admin-reports", {
     headers: {
-        "x-admin-password": adminPassword
+      "x-admin-password": adminPassword
     }
-});
-  if(!response.ok){
-    document.getElementById("reports").textContent =
-      "Unable to load reports.";
+  });
+
+  if (!response.ok) {
+    document.getElementById("reports").textContent = "Unable to load reports.";
     return;
   }
+
   const data = await response.json();
-  document.getElementById("total").textContent =
-    "Total Reports: " + data.length;
-  document.getElementById("reports").innerHTML =
-    data.map(r => `
-      <div class="card">
-        <b>Reason:</b> ${escapeHTML(r.reason)}<br>
-        <small>${escapeHTML(r.createdAt || "")}</small>
-      </div>
-    `).join("");
+  const reports = Array.isArray(data.reports) ? data.reports : [];
+
+  document.getElementById("total").textContent = "Total Reports: " + reports.length;
+
+  document.getElementById("reports").innerHTML = reports.map(r => `
+    <div class="card">
+      <b>Reason:</b> ${escapeHTML(r.reason)}<br>
+      <small>${escapeHTML(r.createdAt || "")}</small>
+    </div>
+  `).join("");
 }
 
 function escapeHTML(value){
